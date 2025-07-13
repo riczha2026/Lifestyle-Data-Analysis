@@ -1,8 +1,10 @@
 # The Unemployed Guide to Living Forever: A Lifestyle Data Analysis
 
+# 🧠 Mind & Body: A Holistic Health Analysis
+
 ## 📌 Introduction
 
-In today's culture, where mental and physical health are heavily emphasized, we — *The Unemployed* — aim to better understand how lifestyle, socioeconomic factors, and biological indicators contribute to overall quality of life. This project explores the complex interplay between well-being, cognitive ability, and physical health, using a wide set of variables to assess how education, income, and lifestyle habits influence both emotional and physical outcomes.
+In today's culture, where mental and physical health are heavily emphasized, we, *The Unemployed*, aim to better understand how lifestyle, socioeconomic factors, and biological indicators contribute to overall quality of life. This project explores the complex interplay between well-being, cognitive ability, and physical health, using a wide set of variables to assess how education, income, and lifestyle habits influence both emotional and physical outcomes.
 
 Societal expectations often pressure individuals to pursue higher education and high-paying careers under the assumption that these paths lead to healthier, happier lives. But do they really? Our analysis will challenge this narrative and investigate whether external success markers actually lead to greater well-being.
 
@@ -65,7 +67,30 @@ We examine how **physical activity**, **smoking**, and **alcohol use** influence
 
 ---
 
-## 📈 Modeling Summary & Key Findings
+## 🧠 Results: Physical Health & Cognitive Function
+
+To test our first hypothesis, we performed a detailed regression analysis to assess associations between physical health metrics and cognitive function.
+
+Our findings reveal **two significant predictors** of lower cognitive function:
+
+- **Age**
+- **Hearing Ability**
+
+### 📉 Key Findings
+- As **age increases**, **cognitive function decreases**, consistent with general aging research.
+- Interestingly, as **hearing ability** scores increased, **cognitive function** decreased. This unexpected result may suggest that individuals with excellent hearing rely less on cognitive effort during communication, potentially reducing cognitive stimulation or engagement in our dataset.
+
+### 🧐 Surprising Results
+Contrary to expectations:
+- **Vision Sharpness** — despite being a known barrier to information intake — showed no significant link to cognition.
+- **Blood Glucose Levels**, the brain’s primary energy source, also lacked a significant relationship with cognitive function.
+
+### 🔍 Model Selection
+Using **stepwise regression**, our best-fitting model identified only **Age** and **Hearing Ability** as meaningful predictors. This implies that other important variables affecting cognitive function may not have been included in the dataset, such as sleep quality or neurological health.
+
+---
+
+## 📈 Results: Lifestyle and Age Prediction
 
 The aim of our model was to explore whether **lifestyle choices** significantly affect **age prediction**. Using a linear regression framework, we found a **meaningful connection**, with **smoking status** standing out as a strong predictor.
 
@@ -83,10 +108,24 @@ To address non-normality in the features, we applied an **Empirical CDF (ECDF) t
 
 ---
 
+## 📄 Dataset Information
+
+- **Dataset Title**: *Human Age Prediction Synthetic Dataset*  
+- **Authors**: M Abdullah and Shahzaib Yaqoob  
+- **Published**: August 2024  
+- **Platform**: [Kaggle](https://www.kaggle.com/datasets/abdullah0a/human-age-prediction-synthetic-dataset)  
+- **Retrieved on**: October 24, 2024  
+
+> This dataset includes synthetic data with variables related to physical health, lifestyle, and demographic factors designed for machine learning-based age prediction.
+
+---
+
 ## 🧠 Team
 
 **The Unemployed**  
 - Richard Zhang  
 - Randy Van Waes  
 - Vincent Agrella  
+
+
 
