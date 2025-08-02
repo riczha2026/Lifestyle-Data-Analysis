@@ -1,0 +1,789 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+\begin{titlepage}
+\centering
+\vspace*{7cm}
+
+{\Huge \textbf{Final Project} \par}
+\vspace{0.25cm}
+{\LARGE The Unemployed Guide to Living Forever: A Lifestyle Data Analysis \par}
+\vspace{0.25cm}
+{\Large Spring 2024 PSTAT 126: Regression Analysis \par}
+\vspace{0.25cm}
+
+{\large Richard Zhang, Ryan Sohn, Oscar Baek, Corbin White, Jeffrey Chen \par}
+
+\vfill
+\end{titlepage}
+
+\newpage
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message =  FALSE)
+knitr::opts_chunk$set(warning =  FALSE)
+knitr::opts_chunk$set(error =  FALSE)
+bfcolor <- function(x, color) {
+  if (knitr::is_latex_output()) {
+    sprintf("\\textcolor{%s}{\\textbf{%s}}", color, x)
+  } else if (knitr::is_html_output()) {
+    sprintf("<span style='color: %s;'><b>%s</b></span>", color, x)
+  } else x
+}
+library(ggplot2)
+library(GGally)
+library(ggcorrplot)
+library(dplyr)
+library(gridExtra)
+```
+
+# Dataset and Group Tasks
+
+## Role Distribution
+
+```{r,echo=F}
+library(knitr)
+library(kableExtra)
+
+team <- data.frame(
+  Name = c("Richard Zhang", "Ryan Sohn", "Oscar Baek", "Corbin White", "Jeffrey Chen"),
+  Responsibilities = c(
+    "Tasked with creating preliminary insights regarding our data and tasked with editing and reviewing the coding segments of each team member’s section. Also responsible for completing the written portion of the report, coordinating team workflows, and scheduling meetings in an Agile system.",
+    "Tasked with interpreting our linear models and conducting hypothesis testing on the correlation and slope of our simple linear regression model.",
+    "Tasked with performing residual analysis to help confirm model assumptions and providing insights related to interpretation of residuals.",
+    "Responsible for data cleaning and generating early insights from the dataset to guide our modeling approach.",
+    "Tasked with building visualizations to support data interpretation. Adds annotations and comments to improve clarity and accessibility of plots."
+  )
+)
+
+kable(team, booktabs = TRUE) %>%
+  kable_styling(latex_options = c("striped", "hold_position"), full_width = FALSE) %>%
+  column_spec(1, width = "4cm") %>%
+  column_spec(2, width = "10cm") %>%
+  row_spec(0, bold = TRUE)
+
+
+```
+
+## Data Information
+
+**Data Name/Title**: Human Age Prediction Synthetic Dataset
+
+**Author/Owner**: M Abdullah and Shahzaib Yaqoob
+
+**Date of Publication**: *August 2024*
+
+**Publication Venue**: Kaggle
+
+**Retrieval Date**: October 24, 2024
+
+**Link**: <https://www.kaggle.com/datasets/abdullah0a/human-age-prediction-synthetic-dataset>
+\newpage
+
+## Initial Insights
+
+With the cultural rise and emphasis on mental and physical health, we as active unemployed human beings want to gain better insights on how we can improve/maintain our quality of life. In analyzing this data, we intend to leverage the variables to understand how certain variables such as gender or education will impact one's emotional and mortal being. We are also interested in finding out if people with great income and education live happy and healthy lives. As many of us have been pressured to try our best to get an amazing education and work in fields that are high-paying to live “great” lives from family and peers. With this data, we can resolve this myth. So variables we will need to look at to test this myth would be stress levels, cognitive function, education, diet, smoking status, alcohol consumption, income level, family history, chronic diseases, physical activity level, and mental health status. With this dataset, we plan to understand the following categorical data: gender and education as well. We will also be utilizing the ensuing quantitative variables such as bone density, hearing ability, and cognitive function. By quick observation, we can make multiple assumptions such as blood pressure(s/d), cholesterol levels(mg/dL), and BMI having influences on weight(kg). We can also make an assumption that age(yr) impacts pollution exposure, education level, physical activity level, and bone density(g/em\^2).
+
+# Research Questions, Hypotheses, and Exploratory Data Analysis (EDA)
+
+## Research Questions
+
+**Question 1:**
+
+In society, we often hear about the brain’s dependence on a healthy body, but is this true? Is there a link between cognitive performance and physical health metrics like vision clarity, bone density, blood glucose levels, and the natural aging process? Are individuals with better physical health markers more likely to maintain sharp cognitive abilities, or do other factors come into play? A prime example for this dilemma is Stephen Hawking. This study aims to explore these relationships, shedding light on how our physical and mental health interact as we age.
+
+**Question 2**
+
+What is the impact of lifestyle choices (physical activity, smoking, alcohol consumption, etc) on age prediction? Have you ever realized that it was always rude to ask a lady their age? So most men and women tend to try to guess it. And most of the times we are inaccurate. This is also because we base it off of one's appearance. Which make it difficult to accurately predict one's age. Well, we "The Unemployed" are on the mission to find out what lifestyle choices impact one's predictions on another age. As one's health and actions towards their body will affect their appearance and affects one's ability to predict their age.
+
+## Hypotheses
+
+**Hypothesis 1:** Physical Health metrics such as vision sharpness, bone density, blood glucose levels, and age do not have any significant relationship with cognitive function.
+
+**Hypothesis 2:** Lifestyle choices such as alcohol consumption, smoking, and physical activity do not have any correlation with one's age.
+
+\newpage
+
+## Exploratory Data Analysis (EDA)
+
+```{r, echo=F}
+library(readxl)
+health="~/Train.csv"
+health_data <- read.csv(health)
+
+```
+
+### Data Cleaning
+
+Checking for any missing values in out dataset:
+
+```{r, echo=F, message=F}
+sort(colSums(is.na(health_data[c(1,4,5,7,8,9,10,11,12,13,14,18,21,26)])),
+     decreasing = FALSE)
+```
+
+-   Since there are no missing values in out dataset, it is not necessary to remove any data entries.
+
+\newpage
+
+### Data Visualization
+
+#### Histogram matrix of relevant numerical variables to help give insight on out data:
+
+```{r, fig.align='center',echo=F,fig.width=7,fig.height=7, message=F}
+
+plot_list <- list()  # Empty list to store each plot
+# Identify numerical and categorical features in health_data
+numerical_features <- names(health_data)[sapply(health_data, is.numeric)]
+categorical_features <- names(health_data)[sapply(health_data, is.character)]
+
+for (i in seq_along(numerical_features)) {
+    feature <- numerical_features[i]
+    p <- ggplot(health_data, aes_string(x = feature)) +
+        geom_histogram(aes(y = ..density..), 
+                       bins = 30, 
+                       fill = "skyblue", color = "black") +
+        geom_density(color = "red") +
+        ggtitle(paste(feature)) +
+        theme_minimal()
+    
+    plot_list[[i]] <- p  # Add plot to list
+}
+
+# Step 3: Arrange Plots of our numeric var
+grid.arrange(grobs = plot_list[c(3,5,6,7,8,9,10,13)],ncol=2)
+```
+
+-   We can see that factors such as Cholesterol Levels, Blood Glucose Levels, Hearing Ability, and Cognitive Function appear to be normally distributed.
+
+-   The Vision Sharpness bargraph is interesting to look at. As we can see that it skewed to the right. However, it goes flat in the middle and then slips down.
+
+-   We can also observe that Stress Levels are the most evenly distributed factor that is relevant to us.
+
+\newpage
+
+#### Histogram matrix of relevant categorical variables:
+
+```{r, fig.align='center',fig.height= 5, fig.width=7, echo=F, message=F}
+for (i in seq_along(categorical_features)) {
+    feature <- categorical_features[i]
+    p <- ggplot(health_data, aes_string(x = feature)) +
+        geom_bar(fill = "skyblue", color = "black") +
+        ggtitle(paste(feature)) +
+        theme_minimal() +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))  
+    
+    plot_list[[i]] <- p  # Add each plot to the list
+}
+grid.arrange(grobs = plot_list[c(1,3,4,5,6)],ncol=3)
+```
+
+-   Based on the bargraphs of our categorical variables, we can see that most of graphs are what we can expect. However, one that is interesting to look at is the fact that out data has lots of former smokers. And that many have smoked or are currently smoking right now (same with alcohol consumption).
+
+#### Boxplot of Relevant Variables:
+
+```{r, echo=F, message=F, fig.align='center',fig.height=2.5,fig.width=7}
+
+#Income level vs Stress Levels
+plot1<-ggplot(health_data, aes(x=as.factor(Income.Level), 
+                        y=Stress.Levels), outliers=T) + 
+  geom_boxplot() + 
+  labs(x='Income Level', y='Stress Level')
+
+#Smoking vs Age
+plot2<-ggplot(health_data, aes(x=as.factor(Smoking.Status), 
+                        y=Age..years.), outliers=T) + 
+  geom_boxplot() + 
+  labs(x='Smoking Status', y='Age (yr)')
+
+#Alcohol vs Age
+plot3<-ggplot(health_data, aes(x=as.factor(Alcohol.Consumption), 
+                        y=Age..years.), outliers=T) + 
+  geom_boxplot() + 
+  labs(x='Alcohol Consumption', y='Age (yr)')
+
+#boxplot matrix
+grid.arrange(plot1,plot2,plot3,ncol=3)
+```
+
+-   Based on this boxplot, we can see that we do not have any outliers. This can be because responses for stress levels are only range from 0 to 10. However, it is interesting to see that the median stress levels for all income levels are pretty similar. This is very relevant as this is implying that no matter how much you make it does not affects one's stress levels.
+
+-   For the smoking and age boxplot, we can see that there are not outliers. We can see that the results are not that surprising due to the fact that people who never smoked are younger. As the older the person gets, the likelihood of them smoking is greater with more life experiences.
+
+\*It is interesting to see that a the median age of people who have not consumed alcohol are in their 50s with is extremely surprising.
+
+#### Scatter plot for Age vs Cognitive Function:
+
+```{r,echo=F, message=F, fig.align='center'}
+ggplot(health_data, aes(x =Age..years., y = Cognitive.Function)) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Scatter Plot: Age vs Cognitive Function")
+```
+
+-   Based on the following scatterplot, we can see a clear negative linear relation between Cognitive Function and Age. Though many of the points are cluster together, if we were to draw an imaginary line following the points we can see a negative linear relation between the two variables. We can confirm this statement later when we look at their correlations.
+
+\newpage
+
+#### Facted Histogram of Cognitive Function by Gender:
+
+```{r,message=F, fig.align='center',echo=F,fig.height=2.5,fig.width=7}
+ggplot(health_data, aes(x = Cognitive.Function)) + 
+  geom_histogram(binwidth = 5, fill = "lightgreen", color = "black") + 
+  facet_wrap(~ health_data$Gender) + 
+  theme_minimal() +
+  labs(title = "Distribution of Cognitive Function by Gender", 
+       x = "Cognitive Function", y = "Count")
+```
+
+-   Based of the faceted histogram with gender and cognitive function, we can see that both genders are normally distributed. With pretty identical distributions.
+
+```{r,echo=F, message=F, fig.align='center',fig.width=7}
+#### Correlations of our variables:
+numeric_df <- health_data[, sapply(health_data, is.numeric)]
+
+# Calculate the correlation matrix
+corr_matrix <- cor(numeric_df, use = "complete.obs")  # Handle missing values
+```
+
+#### Correlation Heatmap of our Dataset:
+
+```{r,echo=F, message=F, fig.align='center',fig.width=7.5}
+# Plot the heatmap using ggplot2
+library(ggplot2)
+library(viridis)
+library(reshape2)
+
+# Melt the correlation matrix for use in ggplot
+melted_corr <- melt(corr_matrix)
+
+# Plot the heatmap with numbers
+ggplot(melted_corr, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue",
+                       high = "red", 
+                       mid = "cornsilk", 
+                       midpoint = 0) +  # Custom color gradient
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = NULL, y = NULL) +
+  geom_text(aes(label = round(value, 2)), color = "black", size = 4)  
+```
+
+-   It is very interesting to see that there are so many relations between the dataset variables that have any relevant correlation between them. We can see that we have significant associations between our variables for our first research question.
+
+-   Like in the scatterplot, we can see that there is a significant negative correlation between Cognitive Function and Age.
+
+#### Skewness and Kurtosis:
+
+```{r,message=F,echo=F}
+library(e1071)
+# Calculate skewness and kurtosis for Age
+skew_age <- skewness(health_data$Age..years.)
+kurt_age <- kurtosis(health_data$Age..years.)
+
+# Calculate skewness and kurtosis for Weight
+skew_Cognitive_Function <- skewness(health_data$Cognitive.Function)
+kurt_Cognitive_Function <- kurtosis(health_data$Cognitive.Function)
+
+# Calculate skewness and kurtosis for Stress
+skew_stress <- skewness(health_data$Stress.Levels)
+kurt_stress <- kurtosis(health_data$Stress.Levels)
+
+
+
+# Print the results
+cat("Skewness of Age:", skew_age, "\n")
+cat("Kurtosis of Age:", kurt_age, "\n")
+cat("Skewness of Cognitive Function:", skew_Cognitive_Function, "\n")
+cat("Kurtosis of Cognitive Function:", kurt_Cognitive_Function, "\n")
+cat("Skewness of Stress Level:", skew_stress, "\n")
+cat("Kurtosis of Stress Level:", kurt_stress, "\n")
+
+```
+
+-   Based on the following results, we can see that the distribution of all three variables above are skewed to the right. With Cognitive Function having the larger skewness.
+-   We can see that the kurtosis of all three variables have flat/spread out distribution. Which means that there are little to no outliers as well as most of our data entries are evenly distributed across the range.
+
+## Initial Insight
+
+Based off all the visualizations done above, it was extremely interesting to see that most of our data entries have or had a history of smoking and consuming alcohol. This is going to be extremely interesting to find out if the two factors will affect age. As we know smoking and consuming alcohol can make a person's appearance look older. A notable find is that most of our relevant variables that we are interested in studying are normally distributed. Another thing that is fascinating is that we do not have any extreme values that will influence our conclusions when we conduct hypothesis testing. \newpage
+
+# Regression Analysis and Interpretation:
+
+## Cognitive Health Research (Research Question 1)
+
+We will first be conducting our Regression Analysis on our first research topic regarding Cognitive Function and physical health metrics.
+
+### Simple and Mulitple Linear Regression
+
+#### Simple Linear Model
+
+```{r,message=F,echo=F}
+summary(lm(Cognitive.Function ~ Age..years., data=health_data))
+```
+
+-   The regression equation for this linear model can be expressed as:
+
+$Cognitive\ Function = 70.30842 - 0.29036 * Age + \epsilon$
+
+-   We can see that the baseline Cognitive Function that people who responded to the survey reported when our Age predictor is zero is $70.30842$ from a score range of $0$ to $100$ (Keep in mind that no such state exists).
+
+-   Based on the model, we can see that as age increases by one year cognitive function decreases by $0.29036$. This effect is highly statistically significant (p-value \<$2\times 10^{-16}$).
+
+-We can also see that our overall model is extremely significant (p-value \<$2\times 10^{-16}$)
+
+-   We can also see that our $R^2$ is $0.2581$. Which implies that approximately $25.81%$ of the variability in Cognitive Function can be explained by Age. However, after adjusting the number of ages, the model explains about $25.79%$ of the variability in Cognitive Function. Since our $R^2$ value is $0.2581$, it also suggests that our model is a poor fit.
+
+#### Multiple Regression Model
+
+```{r,message=F,echo=F}
+multiple_lm <- lm(Cognitive.Function ~ Age..years. + Hearing.Ability..dB.+ 
+                    Vision.Sharpness + Bone.Density..g.cm.. + 
+                    Blood.Glucose.Level..mg.dL. + 
+                    Cholesterol.Level..mg.dL., data=health_data)
+summary(multiple_lm)
+
+```
+
+-   The regression equation for this linear model can be expressed as:
+
+**Cognitive Function** = $78.227$ - $0.249 \cdot$ *Age* - $0.038 \cdot$ *Hearing Ability* + $2.731 \cdot$ *Vision Sharpness* - $0.141 \cdot$ *Bone Density* + $0.008 \cdot$ *Blood Glucose Level* - $0.006 \cdot$ *Cholesterol Level* + $\epsilon$
+
+-   We can see that the baseline Cognitive Function that people who responded to the survey reported when our predictors are zero is $78.227$ from a score range of $0$ to $100$ (Keep in mind that no such state exists).
+
+-   We can see that there is a positive coefficient in Vision Sharpness. Which suggests that an increase in Vision Sharpness rating, Cognitive Function rating increases. An increase in Vision Sharpness by one point is related to a $2.731$ increase in Cognitive Function rating (holding other predictors constant). However, it should be noted that this effect is not statistically significant (p-value=$0.1766$).
+
+-   The most significant negative factor would have to be Age. As an increase in Age by one year is associated to a $0.249$ decrease in Cognitive Function rating (holding other predictors constant).
+
+-   An increase of $1$ unit in Hearing Ability, Cognitive Function decreases by $0.04$ points (holding other predictors constant). This effect is statistically significant (p-value=$0.0381$).
+
+-   An increase of $1$ unit in Vision Sharpness, Cognitive Function increases by $2.731$ points (holding other predictors constant). This effect is not statistically significant (p-value=$0.1766$).
+
+-   An increase of $1$ unit in Bone Density, Cognitive Function decreases by $0.14$ points (holding other predictors constant). This effect is not statistically significant (p-value=$0.9067$).
+
+-   An increase of $1$ unit in Blood Glucose Level, Cognitive Function increases by $0.008$ points (holding other predictors constant). This effect is not statistically significant (p-value=$0.4983$).
+
+-   An increase of $1$ unit in Cholesterol Level, Cognitive Function decreases by $0.006$ points (holding other predictors constant). This effect is not statistically significant (p-value=$0.4834$).
+
+-   We can see that Age and Hearing Ability are the only predictors where their effects are statistically significant at a significance level of $0.05$.
+
+-   Although we have only two predictors having a significant effect on Cognitive Function, we can see that our overall model is extremely significant (p-value \<$2\times 10^{-16}$)
+
+-   We can also see that our $R^2$ is $0.2599$. Which implies that approximately $25.99%$ of the variability in Cognitive Function can be explained by our predictors. However, after adjusting the number of predictors, the model explains about $25.84%$ of the variability in Cognitive Function. Since our $R^2$ value is $0.2599$, it also suggests that our model is a poor fit.
+
+\newpage
+
+### Dianostic Checking for our full Mulitple Regression Model
+
+#### Model Assumptions
+
+```{r,message=F,echo=F,fig.align='center',echo=F,fig.height=6.5,fig.width=7}
+par(mfrow=c(2,2))
+plot(multiple_lm)
+```
+
+-   Based of the Residual vs Fitted plot, we can see that most of our data entries are scattered around the zero line. We can also see that the points are randomly scattered without a funnel shape or pattern suggesting that our residuals are homoscedastic, and independent. This also indicates that the relationship between our predictors and Cognitive Function are linear. The diagram also shows that there are clearly three outliers 705, 2001, and 1932.
+
+-   Based of our Q-Q Residuals plot, we can see that almost all of our points are following the line. Which indicates that our residuals are approximately normal. Which means our normality assumptions of our residuals are met.
+
+-   Based on the Residuals vs Leverage plot, we can see that our data is clustered on the left. Which suggests that most of our observations are not extreme predictor values, resulting in low leverage.
+
+-   With the assumptions of are residuals are true (meaning there is linearity, homoscedasticity, independence, and Normality of residuals), we do not really need to transform our regression model.
+
+#### Multicollinearity
+
+```{r,message=F,echo=F}
+library(car)
+vif(multiple_lm)
+```
+
+-   The VIF results indicate an extremely problematic multicollinearity for Age (13.91) and Bone Density (8.30), suggesting these predictors are highly correlated with others and may destabilize the model. Vision Sharpness (5.26) shows high multicollinearity, while Hearing Ability (2.03), Blood Glucose Level (1.23), and Cholesterol Level (1.23) have low VIFs, indicating having moderate multicollinearity.
+
+-   We will need to apply Ridge Regression to deal with Age, Bone Density, and Vision Sharpness as they have high multicollinearity.
+
+##### Applying Ridge Regression
+
+Since we see that the multicollinearity for the predictors Age, Bone Density, and Vision Sharpness, we will be applying ridge regression to see the significance of these predictors and see if we would need to remove them from our regression model.
+
+
+**Ridge Trace Plot**
+
+```{r,message=F,echo=F,fig.align='center',echo=F,fig.width=7}
+library(glmnet)
+# Prepare the predictor matrix (X) and response vector (y)
+X <- as.matrix(health_data[, c("Age..years.", "Hearing.Ability..dB.", 
+                                "Vision.Sharpness", "Bone.Density..g.cm..", 
+                                "Blood.Glucose.Level..mg.dL.", 
+                                "Cholesterol.Level..mg.dL.")])
+
+y <- health_data$Cognitive.Function
+
+
+# Fit ridge regression model
+ridge.cv <- cv.glmnet(X, y, alpha = 0)
+ridge_fit <-glmnet(X, y, alpha = 0)
+
+# Plot the ridge trace plot
+plot(ridge_fit, xvar = "lambda", label = TRUE,main = "Ridge Trace")
+legend("topright", 
+       legend = colnames(X),
+       col = 1:ncol(X),
+       lty =1,
+       lwd =2)
+
+```
+
+-   Based of the Ridge Trace plot, we can see that Vision Sharpness and Bone Density are predictors that have a steep decline. Which suggests that Vision Sharpness and Bone Density has strong influence on Cognitive Function and is affect by regularization. Since they are likely to be affected by regularization, they should be removed from our model.
+
+-   We can also see that Age and Hearing Ability are predictors that have a noticeable incline. Which indicate that the predictors are less redundant and carry unique information regarding or model. Which suggests that it has an influence in our data.
+
+-   Cholesterol Level and Blood Glucose Level both have a pretty flat line. Which suggests that Cholesterol Level and Blood Glucose Level have less impact on Cognitive Function. Which can inform us to remove them from our model.
+
+**Optimal Lambda**
+
+```{r,message=F,echo=F}
+# Find optimal Lambda 
+best_lambda <- ridge.cv$lambda.min
+best_lambda
+```
+
+-   The optimal value of $\lambda$ that minimizes the test $MSE$ is $0.5971598$.
+
+**Cross-Validation Plot**
+
+```{r,message=F,echo=F,fig.align='center'}
+# Plot cross-validation results to determine optimal lambda
+plot(ridge.cv)
+```
+
+-   Based on this graph, the shape suggests that the full model is doing a good job. Which means that the model is effectively capturing the relationships between our predictors and our response variable (Cognitive Function).
+
+**Coefficients at Optimal Lambda**
+
+```{r,message=F,echo=F}
+ridge_model=glmnet(X, y, alpha = 0, lambda = best_lambda)
+# Get the coefficients at the optimal lambda
+
+ridge_coefficients <- coef(ridge_model)
+ridge_coefficients
+```
+
+\newpage
+
+**Coefficients of Original Regression Model**
+
+```{r,message=F,echo=F}
+lm(y~X)
+```
+
+-   Strictly looking the predictors that had a high VIF values, we can see something interesting. We can observe that there is a significant increase in coefficient with Vision Sharpness and Bone Density. What is more interesting is that the coefficient for Bone Density went from a negative to positive coefficient.
+
+**Thoughts** - Based on what we have seen from applying a ridge regression, we can see that we should remove many predictors in our model to best explain the variability of our predictors of our model. From the Ridge Trace Plot, it makes us believe that we should remove Vision Sharpness, Bone Density, Blood Glucose Level, and Cholesterol Level. As Vision Sharpness and bone density are variables that are affect by regularization. For Blood Glucose Level and Cholesterol Level, they are seem to have little to no impact on our response variable (Cognitive Function).
+
+**R-Squared of our Ridge Regression Model:**
+
+```{r}
+y_predicted <- predict(ridge_fit, s = best_lambda, newx = X)
+
+#find SST and SSE
+sst <- sum((y - mean(y))^2)
+sse <- sum((y_predicted - y)^2)
+
+#find R-Squared
+rsq <- 1 - sse/sst
+rsq
+
+```
+
+-   Looking at the value above, we can see that we have a $R^2$ value of $0.2582572$. Which indicate that the best ridge regression model was able to explain $25.82572$% of our variation in the response of our training data.
+
+### Variable Selection
+
+To prove or validate our thought from the Ridge Regression we will employ a Stepwise Regression to see which variables we should use to better explain the variability our predictors of our model.
+
+#### Forward Selection
+
+```{r,message=F,echo=F}
+library(MASS)
+
+full_model<- lm(Cognitive.Function ~ Age..years. + Hearing.Ability..dB.+ 
+                    Vision.Sharpness + Bone.Density..g.cm.. + 
+                    Blood.Glucose.Level..mg.dL. + 
+                    Cholesterol.Level..mg.dL., data=health_data)
+model_forward <- step(lm(Cognitive.Function~1,data=health_data), 
+                      direction = "forward", scope = formula(full_model))
+model_forward
+
+```
+
+-   When starting with no predictors in the model and adding predictors one by one based on contributions to improve the model fit, we can see that Age and Hearing Ability are the predictors that give us the best results.
+
+\newpage
+
+#### Backward Elimination
+
+```{r,message=F,echo=F}
+model_backward <- step(full_model, direction = "backward", 
+                       scope = formula(full_model))
+model_backward
+
+```
+
+-   When starting with all potential predictors in the model and remove predictors one by one, we can see that the predictors that give us the best results are Age and Hearing Ability. Which is the same as when we applied forward selection.
+
+#### Stepwise Selection
+
+```{r,message=F,echo=F}
+model_stepwise <- step(lm(Cognitive.Function ~1, data = health_data), 
+                         direction = "both", scope = formula(full_model))
+model_stepwise
+```
+
+-   When combining both forward selection and backward elimination, we can see that the predictors that give the best fit are Age and Hearing Ability. Since all of them are the same, we will be using the stepwise model analysis.
+
+
+```{r,message=F,echo=F,fig.align='center'}
+library("see")
+library("performance")
+PerfModel<-compare_performance(model_stepwise,full_model)
+plot(PerfModel)
+
+```
+
+-   We can see that based on this diagram, that the Stepwise model has a larger polygon. Which suggests that it will be a better model.
+
+```{r,message=F,echo=F}
+summary(model_stepwise)
+```
+
+-   The regression equation for this linear model can be expressed as:
+
+$Cognitive\ Function = 80.182 - 0.271 * Age - 0.038 * Hearing\ Ability +\epsilon$
+
+-   We can see that the baseline Cognitive Function that people who responded to the survey reported when our Age and Hearing Ability predictor is zero is $80.182$ from a score range of $0$ to $100$ (Keep in mind that no such state exists).
+
+-   Based on the model, we can see that as age increases by one year cognitive function decreases by $0.271$. This effect is highly statistically significant (p-value \<$2\times 10^{-16}$).
+
+-   Based on the model, we can see that as age increases by one year cognitive function decreases by $0.038$. This effect is highly statistically significant (p-value =$0.0372$).
+
+-   We can also see that our overall model is extremely significant (p-value \<$2\times 10^{-16}$)
+
+-   We can also see that our $R^2$ is $0.2592$. Which implies that approximately $25.92%$ of the variability in Cognitive Function can be explained by Age. However, after adjusting the number of ages, the model explains about $25.87%$ of the variability in Cognitive Function. Since our $R^2$ value is $0.2592$, it also suggests that our model is a poor fit.\
+    \newpage
+
+### Diagnostic Check of the Best Model
+
+#### Model Assumptions
+
+```{r,message=F,echo=F,fig.align='center',fig.height=7,fig.width=7}
+par(mfrow=c(2,2))
+plot(model_stepwise)
+```
+
+-   Based of the Residual vs Fitted plot, we can see that most of our data entries are scattered around the zero line. We can also see that the points are randomly scattered without a funnel shape or pattern suggesting that our residuals are homoscedastic, and independent. This also indicates that the relationship between our predictors and Cognitive Function are linear. The diagram also shows that there are clearly three outliers at observation 705, 2001, and 1932.
+
+-   Based of our Q-Q Residuals plot, we can see that almost all of our points are following the line. Which indicates that our residuals are approximately normal. Which means our normality assumptions of our residuals are met.
+
+-   Based on the Residuals vs Leverage plot, we can see that our data is clustered on the left. Which suggests that most of our observations are not extreme predictor values, resulting in low leverage. We can notice that our points are even more spread to the left compared to our full model.
+
+-   With the assumptions of are residuals are true (meaning there is linearity, homoscedasticity, independence, and Normality of residuals), we do not really need to transform our regression model.
+
+#### Multicollinearity
+
+```{r,message=F,echo=F}
+library(car)
+vif(model_stepwise)
+```
+
+-   We can see that unlike the full model, our predictors do not have problematic mulitcollinearity to worry about. Whcih suggests that there are no predictors that we would need to shrink or remove from our model.
+
+
+#### Influential Points and Outliers
+
+**Influential Points**
+
+```{r,message=F,echo=F,fig.align='center',echo=F,fig.height=4,fig.width=7}
+library(car)
+influencePlot(model_stepwise)
+```
+
+-   We can see that there are $5$ points ($705,1256,1472,1932, and\ 2173$) are identified as influential points.
+
+\newpage
+
+**Outliers**
+
+```{r,message=F,echo=F}
+outlierTest(model_stepwise)
+```
+
+-   Point 705 is the only point that is identified as an outlier from our model.
+
+### Conclusion
+
+Circling back to our first research question and hypothesis that we are testing. Are there any significant associations between Physical Health metrics and Cognitive Function? Based on the intensive regression analysis that we have done, we can conclude that there is sufficient evidence to claim that there are only two significant **Physical** Health metrics that have a significant negative impact on Cognitive Function. These two predictors are *Age* and *Hearing Ability*. In which as one’s age and hearing ability rating increases one’s cognitive function rating decreases. It is interesting to find that as one’s hearing ability rating increases their cognitive function rating decreases. This might be because when one’s hearing ability is great they do not need to use much of their brain power to listen to conversations or lectures. Which suggests a decrease in cognitive function in our research. This research is extremely interesting mainly because one would think that other predictors such as *Vision Sharpness* and *Blood Glucose Levels* do not have significant associations to Cognitive Function. As Vision Sharpness is a common barrier to knowledge. Which can hinder one’s ability to think. With Blood Glucose Levels, it is mainly because glucose serves as the human brain’s primary source of energy. Hence its impact/importance in one’s cognitive function. We should note that when we try to uncover the best model for understanding our response variable, we discovered that the predictors that best explain *Cognitive Function* are *Age* and *Hearing Ability* based on **Stepwise Regression**. Overall, we can say that certain physical health metrics have a significant impact on *Cognitive Function*. However, there are still relevant physical health metrics that we can collect and test to see their significance on *Cognitive Function*.
+
+\newpage
+
+## Age Lifestyle Research (Research Question 2)
+
+### Simple Linear Model
+
+```{r,message=F,echo=F}
+# Simple Linear Regression Model
+slr <- lm(Age..years. ~ Smoking.Status, data=health_data)
+summary(slr)
+```
+
+-   The regression equation for this linear model can be expressed as:
+
+$Age = 57.0794 - 1.2708* Smoking_{FormerSmoker} - 9.0453 * Smoking_{NeverSmoked} + \epsilon$
+
+-   The baseline age for respondents to the survey who identified as current smokers is 57.0794 years old. Those who identified as occasional alcohol drinkers had an expected age of 1.2708 years younger, and those who identified as having never smoked had an expected age of 9.0453 years younger.
+
+-   The model has a p-value of \< $2\times 10^{-16}$, suggesting that there is a statistically significant relationship between age and smoking status.
+
+-   We can also see that our $R^2$ is $0.03712$. Which implies that approximately $3.712%$ of the variability in Age can be explained by our predictor. However, after adjusting the number of predictors, the model explains about $3.648%$ of the variability in Cognitive Function. Since our $R^2$ value is $0.03712$, it also suggests that our model is a poor fit.
+
+\newpage
+
+### Multiple Linear Regression
+
+```{r,message=F,echo=F}
+mlr <- lm(Age..years. ~ 0 + Alcohol.Consumption + Physical.Activity.Level + Smoking.Status, data=health_data)
+summary(mlr)
+```
+
+-   The regression equation for this linear model can be expressed as:
+
+**Age** = $55.7385 \cdot$ $Alcohol_{ConsumptionFrequent}$ + $56.7965 \cdot$ $Alcohol_{ConsumptionNone}$ + $57.5972 \cdot$ $Alcohol_{ConsumptionOccasional}$ + $0.7246 \cdot$ $Physical\ Activity\ Level_{Low}$ + $0.1185 \cdot$ $Physical\ Activity\ Level_{Moderate}$ - $1.3144 \cdot$ $Smoking_{FormerSmoker}$ - $9.0272 \cdot$ $Smoking_{NeverSmoked}$+ $\epsilon$
+
+-   Let seems that our model does not have a baseline value for *Age*.
+
+-   We can see that *Alcohol Consumption* has an extremely high coefficient. Which would make sense that they have strong statistically significance on our response variable.
+
+-   The model has a p-value of $<2\times 10^{-16}$, suggesting that our model is significant. Individually, the three alcohol consumption levels and having never smoked are the only predictors that are extremely statistically significant (all p-value$<2\times 10^{-16}$).
+
+-   We can also see that our $R^2$ is $0.8762$. Which implies that approximately $87.62%$ of the variability in Age can be explained by our predictor. However, after adjusting the number of predictors, the model explains about $87.59%$ of the variability in Cognitive Function. Since our $R^2$ value is $0.8762$, it also suggests that our model is a good fit.
+
+### Variable Selection
+
+#### Forward Selection
+
+```{r,message=F,echo=F}
+full_model<- mlr
+model_forward <- step(lm(Age..years.~1,data=health_data), 
+                      direction = "forward", scope = formula(full_model))
+model_forward
+```
+
+-   When starting with no predictors in the model and adding predictors one by one based on contributions to improve the model fit, we can see that Smoking status is the predictor that give us the best results.
+
+#### Backward Elimination
+
+```{r,message=F,echo=F}
+model_backward <- step(full_model, direction = "backward", 
+                       scope = formula(full_model))
+model_backward
+
+```
+
+-   When starting with all potential predictors in the model and remove predictors one by one, we can see that the predictors that give us the best results is Smoking Status, which matches our results from when we applied forward selection.
+
+#### Stepwise Selection
+
+```{r,message=F,echo=F}
+model_stepwise <- step(lm(Age..years. ~1, data = health_data), 
+                         direction = "both", scope = formula(full_model))
+model_stepwise
+```
+
+-   When combining both forward selection and backward elimination, we can see that the predictor that gives the best fit is once again Smoking Status. Since all of them are the same, we will be using the stepwise model analysis.
+
+
+
+```{r,message=F,echo=F,fig.align='center'}
+library("see")
+library("performance")
+PerfModel<-compare_performance(model_stepwise,full_model)
+plot(PerfModel)
+```
+
+-   We can see that based on this diagram that the full model has a larger polygon. Which suggests that it will be a better model. We do not need to remove any variables from our model.
+
+### Diagnostic Checking
+
+```{r,message=F,echo=F,fig.align='center',fig.height=6,fig.width=7}
+par(mfrow = c(2,2))
+plot(mlr)
+```
+
+
+-   Based of the Residual vs Fitted plot, we can see that most of our data entries are scattered around the zero line. We can also see that the points are randomly scattered without a funnel shape or pattern suggesting that our residuals are homoscedastic, and independent. This also indicates that the relationship between our predictors and Cognitive Function are linear. The diagram also shows that there are a couple of outliers in the top left.
+
+-   Based of our Q-Q Residuals plot, we can see that there is a clear trend to the line that does not match the line, indicating that our residuals are approximately not normal. Rather, the data appears to follow a cumulative distribution.
+
+-   Based on our Residual vs Leverage plot, the data plots are all scattered on the right side of the plot. Which suggests that our points have high leverage. Points with high leverage indicate that our predictor values are far from the mean. Which can have a strong influence on the regression goodness of fit.
+
+-   Since the normality assumption has been violated, we need to transform our regression model.
+
+#### Transforming Using Empirical Cumulative Distribution Function (ECDF)
+
+Since our model Q-Q Residual plot does not meet the assumption of normality for our residuals, we will utilize a ECDF transformation to solve this issue.
+
+```{r,message=F,echo=F}
+library(stats)
+ecdf_transform <- function(x) qnorm(ecdf(x)(x))
+health_data$age_transformed <- ecdf_transform(health_data$Age..years.)
+inf <- which(is.infinite(health_data$age_transformed))
+new_health_data <- health_data[-inf,]
+
+lm_model_transformed <- lm(age_transformed ~ Alcohol.Consumption + Physical.Activity.Level + Smoking.Status,
+                           data = new_health_data)
+shapiro.test(mlr$residuals)
+shapiro.test(lm_model_transformed$residuals)
+```
+
+-   Shown by the Shapiro-Wilk test, this transformation has taken our model's normality from 96.37% to 99.52%.
+
+
+#### Diagnostic Check on Newly Transformed Model
+
+```{r,message=F,echo=F,fig.align='center',fig.height=6,fig.width=7}
+par(mfrow = c(2,2))
+plot(lm_model_transformed)
+```
+
+-   Based on the matrix plot above we can clearly see that our normality is more stabilized compared to our original model. As we can see that our points are following the line path better.
+
+### Multicollinearity
+
+```{r,message=F,echo=F}
+library(car)
+vif(lm_model_transformed)
+```
+
+-   All three of our predictor variables have a low VIF, indicating that they are likely not highly correlated with one another and will not affect our model with multicollinearity.
+
+### Influential Points
+
+```{r,message=F,echo=F,fig.align='center',fig.height=4.5,fig.width=7}
+library(car)
+influencePlot(lm_model_transformed)
+```
+
+-   There are 5 influential points at observations 16, 258, 303, 523, and 2760.
+
+### Outliers
+
+```{r,message=F,echo=F}
+outlierTest(full_model)
+```
+
+-   There is only one outlier identified in our dataset at observation 725
+
+### Conclusion
+
+The aim of our model was to tackle the question of whether our lifestyle choices (physical activity, smoking, alcohol consumption, etc) has a significant effect on age prediction. Based on the results of our regression model, we can conclude that there is a meaningful connection between the two, with an extra emphasis on the effects of one's smoking status as a predictor. However, there are still aspects to improve upon. While our Empirical CDF transformation was able to achieve normality within our model, it also had the negative effect of dramatically decreasing our R squared value, adding more unexplained variability. In order to improve upon this, we may want to gather more relevant variables, such as hours of sleep per night or dieting habits.
