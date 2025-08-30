@@ -124,8 +124,10 @@ To address non-normality in the features, we applied an **Empirical CDF (ECDF) t
 
 **The Unemployed**  
 - Richard Zhang  
-- Randy Van Waes  
-- Vincent Agrella  
+- Ryan Sohn
+- Corbin White
+- Oscar Baek
+- Jeffrey Chen
 
 
 
